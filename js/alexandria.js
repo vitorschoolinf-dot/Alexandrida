@@ -772,3 +772,65 @@ function iniciarDarkMode() {
         btnTema.textContent = isDark ? "☀ Luz" : "🌙 Tema";
     });
 }
+// ==========================================================
+// 11. NOVAS FUNCIONALIDADES: EXCEL E RESETAR
+// ==========================================================
+
+const btnExcel = document.querySelector("#btnExcel");
+const btnResetar = document.querySelector("#btnResetar");
+
+// --- FUNÇÃO SALVAR EXCEL (CSV) ---
+btnExcel.addEventListener("click", (e) => {
+    e.preventDefault();
+    const livros = AlexandriaAPI.getLivros();
+
+    if (livros.length === 0) {
+        return alert("Não há livros para exportar.");
+    }
+
+    // 1. Criar o cabeçalho do CSV
+    let csvContent = "Título;Autor;Editora;Edição;Código;Lido;Descartado;Observação\n";
+
+    // 2. Adicionar as linhas dos livros
+    livros.forEach(l => {
+        const linha = [
+            l.titulo,
+            l.autor,
+            l.editora || "",
+            l.edicao || "",
+            l.codigo,
+            l.lido ? "Sim" : "Não",
+            l.descartado ? "Sim" : "Não",
+            (l.observacao || "").replace(/\n/g, " ") // Remove quebras de linha para não quebrar o CSV
+        ].join(";"); // Usamos ponto e vírgula (;) porque o Excel em PT-BR prefere esse separador
+        
+        csvContent += linha + "\n";
+    });
+
+    // 3. Criar o Blob com BOM (Byte Order Mark) para suportar acentuação no Excel
+    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    // 4. Download do arquivo
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `alexandria_livros_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+// --- FUNÇÃO RESETAR TUDO ---
+btnResetar.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const confirmacao = confirm("PERIGO: Isso apagará TODOS os livros e grupos cadastrados permanentemente. Deseja continuar?");
+    
+    if (confirmacao) {
+        // Apaga a chave do banco no LocalStorage
+        localStorage.removeItem(AlexandriaAPI.key);
+        
+        // Recarrega a página para limpar a interface e recriar o banco vazio
+        window.location.reload();
+    }
+});
